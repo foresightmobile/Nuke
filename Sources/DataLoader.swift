@@ -40,9 +40,8 @@ public final class DataLoader: DataLoading {
     /// as a `urlCache`.
     public static var defaultConfiguration: URLSessionConfiguration {
         let conf = URLSessionConfiguration.default
-        if #available(OSXApplicationExtension 10.15, *) {
-            conf.urlCache = DataLoader.sharedUrlCache
-        }
+        conf.urlCache = DataLoader.sharedUrlCache()
+        
         return conf
     }
 
@@ -68,12 +67,21 @@ public final class DataLoader: DataLoading {
 
     /// Shared url cached used by a default `DataLoader`. The cache is
     /// initialized with 0 MB memory capacity and 150 MB disk capacity.
-    @available (OSX 10.15, *)
-    public static let sharedUrlCache = URLCache(
-        memoryCapacity: 0,
-        diskCapacity: 150 * 1024 * 1024, // 150 MB
-        directory: URL(fileURLWithPath: cachePath)
-    )
+//    @available(OSXApplicationExtension 10.15, *)
+//    @available(iOSApplicationExtension 13.0, *)
+    public static let sharedUrlCache = { () -> URLCache in
+        #if targetEnvironment(UIKitForMac)
+            return URLCache(
+                memoryCapacity: 0,
+                diskCapacity: 150 * 1024 * 1024, // 150 MB
+                directory: URL(fileURLWithPath: cachePath))
+        #else
+            return URLCache(
+                memoryCapacity: 0,
+                diskCapacity: 150 * 1024 * 1024, // 150 MB
+                diskPath: cachePath)
+        #endif
+    }
 
     public func loadData(with request: URLRequest, didReceiveData: @escaping (Data, URLResponse) -> Void, completion: @escaping (Swift.Error?) -> Void) -> Cancellable {
         return _impl.loadData(with: request, didReceiveData: didReceiveData, completion: completion)
